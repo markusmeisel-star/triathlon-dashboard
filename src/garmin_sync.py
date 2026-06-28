@@ -8,17 +8,26 @@ def sync_garmin():
     email = os.environ["GARMIN_EMAIL"]
     password = os.environ["GARMIN_PASSWORD"]
     
-    client = Garmin(email, password)
-    client.login()
+    client = Garmin(email=email, password=password, is_cn=False)
+    
+    try:
+        client.login()
+    except Exception as e:
+        print(f"Login Fehler: {e}")
+        raise
     
     db = get_client()
     today = date.today()
     week_ago = today - timedelta(days=7)
     
     # Aktivitäten sync
-    activities = client.get_activities_by_date(
-        week_ago.isoformat(), today.isoformat()
-    )
+    try:
+        activities = client.get_activities_by_date(
+            week_ago.isoformat(), today.isoformat()
+        )
+    except Exception as e:
+        print(f"Aktivitäten Fehler: {e}")
+        activities = []
     
     for act in activities:
         sport_type = act.get("activityType", {}).get("typeKey", "unknown")
@@ -50,7 +59,9 @@ def sync_garmin():
     try:
         hrv = client.get_hrv_data(today.isoformat())
         sleep = client.get_sleep_data(today.isoformat())
-        body_battery = client.get_body_battery(today.isoformat())
+        body_battery = client.get_body_battery(
+            today.isoformat(), today.isoformat()
+        )
         stats = client.get_stats(today.isoformat())
         
         metrics = {
