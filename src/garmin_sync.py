@@ -61,12 +61,40 @@ def sync_garmin():
         upsert_activity(db, activity)
         print(f"✅ Gespeichert: {sport} am {act.get('startTimeLocal')}")
     
+    # Tägliche Metriken sync
     try:
-        hrv = g.get_hrv_data(today.isoformat())
-        sleep = g.get_sleep_data(today.isoformat())
-        body_battery = g.get_body_battery(today.isoformat(), today.isoformat())
+        print("Hole Stats...")
         stats = g.get_stats(today.isoformat())
-        
+        print(f"Stats: {stats.get('restingHeartRate')}")
+    except Exception as e:
+        print(f"Stats Fehler: {e}")
+        stats = {}
+
+    try:
+        print("Hole Sleep...")
+        sleep = g.get_sleep_data(today.isoformat())
+        print(f"Sleep OK")
+    except Exception as e:
+        print(f"Sleep Fehler: {e}")
+        sleep = None
+
+    try:
+        print("Hole HRV...")
+        hrv = g.get_hrv_data(today.isoformat())
+        print(f"HRV OK")
+    except Exception as e:
+        print(f"HRV Fehler: {e}")
+        hrv = None
+
+    try:
+        print("Hole Body Battery...")
+        body_battery = g.get_body_battery(today.isoformat(), today.isoformat())
+        print(f"Body Battery OK")
+    except Exception as e:
+        print(f"Body Battery Fehler: {e}")
+        body_battery = None
+
+    try:
         metrics = {
             "date": today.isoformat(),
             "hrv_ms": hrv.get("lastNight", {}).get("avg") if hrv else None,
@@ -79,7 +107,7 @@ def sync_garmin():
         print("✅ Metriken gespeichert")
     except Exception as e:
         print(f"Metriken Fehler: {e}")
-    
+
     print(f"✅ Garmin sync abgeschlossen: {len(activities)} Aktivitäten")
 
 if __name__ == "__main__":
