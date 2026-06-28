@@ -64,7 +64,7 @@ def sync_garmin():
     try:
         print("Hole Stats...")
         stats = g.get_stats(today.isoformat())
-        print(f"Stats: {stats.get('restingHeartRate')}")
+        print(f"Stats: {stats}")
     except Exception as e:
         print(f"Stats Fehler: {e}")
         stats = {}
@@ -92,6 +92,14 @@ def sync_garmin():
     except Exception as e:
         print(f"Body Battery Fehler: {e}")
         body_battery = None
+
+    try:
+        print("Hole SpO2...")
+        spo2 = g.get_spo2_data(today.isoformat())
+        print(f"SpO2: {spo2}")
+    except Exception as e:
+        print(f"SpO2 Fehler: {e}")
+        spo2 = None
 
     try:
         metrics = {
