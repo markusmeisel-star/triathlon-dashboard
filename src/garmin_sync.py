@@ -7,13 +7,21 @@ from garminconnect import Garmin
 from db import get_client, upsert_activity, upsert_daily_metrics
 
 def sync_garmin():
-    # Session Token laden
+    email = os.environ["GARMIN_EMAIL"]
+    password = os.environ["GARMIN_PASSWORD"]
     session_data = os.environ["GARMIN_SESSION"]
-    client_obj = pickle.loads(base64.b64decode(session_data))
     
-    g = Garmin.__new__(Garmin)
-    g.client = client_obj
-    g.display_name = None
+    # Garmin Objekt normal initialisieren
+    g = Garmin(email, password)
+    
+    # Session Token laden um Login zu überspringen
+    try:
+        g.client = pickle.loads(base64.b64decode(session_data))
+        g.display_name = g.get_full_name()
+        print(f"Session geladen für: {g.display_name}")
+    except Exception as e:
+        print(f"Session Fehler, versuche normalen Login: {e}")
+        g.login()
     
     db = get_client()
     today = date.today()
@@ -24,6 +32,7 @@ def sync_garmin():
         activities = g.get_activities_by_date(
             week_ago.isoformat(), today.isoformat()
         )
+        print(f"Gefunden: {len(activities)} Aktivitäten")
     except Exception as e:
         print(f"Aktivitäten Fehler: {e}")
         activities = []
@@ -70,6 +79,7 @@ def sync_garmin():
             "sleep_score": sleep.get("dailySleepDTO", {}).get("sleepScores", {}).get("overall", {}).get("value") if sleep else None
         }
         upsert_daily_metrics(db, metrics)
+        print("✅ Metriken gespeichert")
     except Exception as e:
         print(f"Metriken Fehler: {e}")
     
