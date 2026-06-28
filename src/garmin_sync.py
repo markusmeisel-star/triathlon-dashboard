@@ -62,14 +62,6 @@ def sync_garmin():
         print(f"✅ Gespeichert: {sport} am {act.get('startTimeLocal')}")
     
     try:
-        print("Hole Stats...")
-        stats = g.get_stats(today.isoformat())
-        print(f"Stats: {stats}")
-    except Exception as e:
-        print(f"Stats Fehler: {e}")
-        stats = {}
-
-    try:
         print("Hole Sleep...")
         sleep = g.get_sleep_data(today.isoformat())
         print(f"Sleep OK")
@@ -96,19 +88,29 @@ def sync_garmin():
     try:
         print("Hole SpO2...")
         spo2 = g.get_spo2_data(today.isoformat())
-        print(f"SpO2: {spo2}")
+        print(f"SpO2 OK")
     except Exception as e:
         print(f"SpO2 Fehler: {e}")
         spo2 = None
+
+    # SpO2 Stunden unter 90% berechnen
+    spo2_hours_below_90 = None
+    if spo2 and spo2.get("spO2HourlyAverages"):
+        below = sum(1 for reading in spo2["spO2HourlyAverages"] if reading[1] < 90)
+        spo2_hours_below_90 = round(below * 0.5, 1)  # jeder Eintrag = 30min
 
     try:
         metrics = {
             "date": today.isoformat(),
             "hrv_ms": hrv.get("hrvSummary", {}).get("lastNightAvg") if hrv else None,
             "body_battery": body_battery[0].get("charged") if body_battery else None,
-            "resting_hr": stats.get("restingHeartRate"),
+            "resting_hr": None,
             "sleep_sec": sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds") if sleep else None,
-            "sleep_score": sleep.get("dailySleepDTO", {}).get("sleepScores", {}).get("overall", {}).get("value") if sleep else None
+            "sleep_score": sleep.get("dailySleepDTO", {}).get("sleepScores", {}).get("overall", {}).get("value") if sleep else None,
+            "spo2_avg": spo2.get("averageSpO2") if spo2 else None,
+            "spo2_sleep": spo2.get("avgSleepSpO2") if spo2 else None,
+            "spo2_lowest": spo2.get("lowestSpO2") if spo2 else None,
+            "spo2_hours_below_90": spo2_hours_below_90
         }
         upsert_daily_metrics(db, metrics)
         print("✅ Metriken gespeichert")
