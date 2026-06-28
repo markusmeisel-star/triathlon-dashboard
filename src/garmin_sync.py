@@ -2,7 +2,7 @@ import os
 import json
 import pickle
 import base64
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from garminconnect import Garmin
 from db import get_client, upsert_activity, upsert_daily_metrics
 
@@ -93,11 +93,25 @@ def sync_garmin():
         print(f"SpO2 Fehler: {e}")
         spo2 = None
 
-    # SpO2 Stunden unter 90% berechnen
+    # SpO2 Stunden unter 90% NUR während Schlaf berechnen
     spo2_hours_below_90 = None
     if spo2 and spo2.get("spO2HourlyAverages"):
-        below = sum(1 for reading in spo2["spO2HourlyAverages"] if reading[1] < 90)
-        spo2_hours_below_90 = round(below * 0.5, 1)  # jeder Eintrag = 30min
+        sleep_start = spo2.get("sleepStartTimestampGMT")
+        sleep_end = spo2.get("sleepEndTimestampGMT")
+        
+        if sleep_start and sleep_end:
+            sleep_start_ms = int(datetime.fromisoformat(sleep_start.replace(".0", "")).timestamp() * 1000)
+            sleep_end_ms = int(datetime.fromisoformat(sleep_end.replace(".0", "")).timestamp() * 1000)
+            
+            sleep_readings = [
+                r for r in spo2["spO2HourlyAverages"]
+                if sleep_start_ms <= r[0] <= sleep_end_ms
+            ]
+            below = sum(1 for r in sleep_readings if r[1] < 90)
+            spo2_hours_below_90 = round(below * 0.5, 1)
+        else:
+            below = sum(1 for r in spo2["spO2HourlyAverages"] if r[1] < 90)
+            spo2_hours_below_90 = round(below * 0.5, 1)
 
     try:
         metrics = {
@@ -107,7 +121,7 @@ def sync_garmin():
             "resting_hr": None,
             "sleep_sec": sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds") if sleep else None,
             "sleep_score": sleep.get("dailySleepDTO", {}).get("sleepScores", {}).get("overall", {}).get("value") if sleep else None,
-            "spo2_avg": spo2.get("averageSpO2") if spo2 else None,
+            "spo2_avg": spo2.get("avgSleepSpO2") if spo2 else None,
             "spo2_sleep": spo2.get("avgSleepSpO2") if spo2 else None,
             "spo2_lowest": spo2.get("lowestSpO2") if spo2 else None,
             "spo2_hours_below_90": spo2_hours_below_90
