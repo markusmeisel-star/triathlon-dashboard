@@ -21,10 +21,11 @@ jobs:
       - name: Dependencies installieren
         run: pip install -r requirements.txt
 
-      - name: Garmin Sync
+    - name: Garmin Sync
         env:
           GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+          GARMIN_SESSION: ${{ secrets.GARMIN_SESSION }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python src/garmin_sync.py
