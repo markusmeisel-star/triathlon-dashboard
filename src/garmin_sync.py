@@ -61,7 +61,6 @@ def sync_garmin():
         upsert_activity(db, activity)
         print(f"✅ Gespeichert: {sport} am {act.get('startTimeLocal')}")
     
-    # Tägliche Metriken sync
     try:
         print("Hole Stats...")
         stats = g.get_stats(today.isoformat())
@@ -81,7 +80,7 @@ def sync_garmin():
     try:
         print("Hole HRV...")
         hrv = g.get_hrv_data(today.isoformat())
-        print(f"HRV Daten: {hrv}")
+        print(f"HRV OK")
     except Exception as e:
         print(f"HRV Fehler: {e}")
         hrv = None
@@ -97,7 +96,7 @@ def sync_garmin():
     try:
         metrics = {
             "date": today.isoformat(),
-            "hrv_ms": hrv.get("lastNight", {}).get("avg") if hrv else None,
+            "hrv_ms": hrv.get("hrvSummary", {}).get("lastNightAvg") if hrv else None,
             "body_battery": body_battery[0].get("charged") if body_battery else None,
             "resting_hr": stats.get("restingHeartRate"),
             "sleep_sec": sleep.get("dailySleepDTO", {}).get("sleepTimeSeconds") if sleep else None,
