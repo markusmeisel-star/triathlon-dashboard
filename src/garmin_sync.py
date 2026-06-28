@@ -1,20 +1,19 @@
 import os
 import json
+import pickle
+import base64
 from datetime import date, timedelta
 from garminconnect import Garmin
 from db import get_client, upsert_activity, upsert_daily_metrics
 
 def sync_garmin():
-    email = os.environ["GARMIN_EMAIL"]
-    password = os.environ["GARMIN_PASSWORD"]
+    # Session Token laden
+    session_data = os.environ["GARMIN_SESSION"]
+    client_obj = pickle.loads(base64.b64decode(session_data))
     
-    client = Garmin(email=email, password=password, is_cn=False)
-    
-    try:
-        client.login()
-    except Exception as e:
-        print(f"Login Fehler: {e}")
-        raise
+    g = Garmin.__new__(Garmin)
+    g.client = client_obj
+    g.display_name = None
     
     db = get_client()
     today = date.today()
@@ -22,7 +21,7 @@ def sync_garmin():
     
     # Aktivitäten sync
     try:
-        activities = client.get_activities_by_date(
+        activities = g.get_activities_by_date(
             week_ago.isoformat(), today.isoformat()
         )
     except Exception as e:
@@ -57,12 +56,10 @@ def sync_garmin():
     
     # Tägliche Metriken sync
     try:
-        hrv = client.get_hrv_data(today.isoformat())
-        sleep = client.get_sleep_data(today.isoformat())
-        body_battery = client.get_body_battery(
-            today.isoformat(), today.isoformat()
-        )
-        stats = client.get_stats(today.isoformat())
+        hrv = g.get_hrv_data(today.isoformat())
+        sleep = g.get_sleep_data(today.isoformat())
+        body_battery = g.get_body_battery(today.isoformat(), today.isoformat())
+        stats = g.get_stats(today.isoformat())
         
         metrics = {
             "date": today.isoformat(),
