@@ -3,4 +3,4 @@ supabase==2.3.0
 gotrue==2.4.1
 python-telegram-bot==20.7
 requests
-httpx
+httpx==0.25.2
