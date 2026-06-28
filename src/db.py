@@ -13,7 +13,5 @@ def upsert_daily_metrics(db, metrics):
     db.table("daily_metrics").upsert(metrics).execute()
 
 def get_week_activities(db, week_start):
-    return db.table("activities")\
-        .select("*")\
-        .gte("started_at", week_start)\
-        .execute().data
+    response = db.table("activities").select("*").gte("started_at", week_start).execute()
+    return response.data
