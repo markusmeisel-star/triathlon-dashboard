@@ -81,7 +81,7 @@ def sync_garmin():
     try:
         print("Hole HRV...")
         hrv = g.get_hrv_data(today.isoformat())
-        print(f"HRV OK")
+        print(f"HRV Daten: {hrv}")
     except Exception as e:
         print(f"HRV Fehler: {e}")
         hrv = None
