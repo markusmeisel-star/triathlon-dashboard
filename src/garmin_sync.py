@@ -15,8 +15,8 @@ def sync_garmin():
     
     try:
         g.client = pickle.loads(base64.b64decode(session_data))
-        g.display_name = g.get_full_name()
-        print(f"Session geladen für: {g.display_name}")
+        g.display_name = "markus"
+        print(f"Session geladen")
     except Exception as e:
         print(f"Session Fehler, versuche normalen Login: {e}")
         g.login()
