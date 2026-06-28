@@ -47,7 +47,6 @@ async def send_daily_report():
     bb  = m.get("body_battery")
     sleep_score = m.get("sleep_score")
     sleep_sec = m.get("sleep_sec")
-    spo2_avg = m.get("spo2_avg")
     spo2_sleep = m.get("spo2_sleep")
     spo2_lowest = m.get("spo2_lowest")
     spo2_below_90 = m.get("spo2_hours_below_90")
@@ -60,24 +59,24 @@ async def send_daily_report():
     
     def hrv_rating(v):
         if not v: return "–", "keine Daten"
-        if v >= 70: return "🟢", "Sehr gut – bereit für intensive Einheit"
-        if v >= 50: return "🟡", "Gut – moderate Belastung empfohlen"
-        if v >= 35: return "🟠", "Mäßig – lockeres Training oder Pause"
+        if v >= 70: return "🟢", "Sehr gut – intensive Einheit möglich"
+        if v >= 50: return "🟡", "Gut – moderate Belastung"
+        if v >= 35: return "🟠", "Mäßig – lockeres Training"
         return "🔴", "Niedrig – Erholung priorisieren"
     
     def bb_rating(v):
         if not v: return "–", "keine Daten"
         if v >= 75: return "🟢", "Hoch – volle Leistung möglich"
-        if v >= 50: return "🟡", "Mittel – solides Training möglich"
+        if v >= 50: return "🟡", "Mittel – solides Training"
         if v >= 25: return "🟠", "Niedrig – leichtes Training"
-        return "🔴", "Sehr niedrig – Ruhetag empfohlen"
+        return "🔴", "Sehr niedrig – Ruhetag"
     
     def sleep_rating(v):
         if not v: return "–", "keine Daten"
         if v >= 80: return "🟢", "Ausgezeichnet"
         if v >= 60: return "🟡", "Gut"
         if v >= 40: return "🟠", "Mäßig"
-        return "🔴", "Schlecht – mehr Schlaf einplanen"
+        return "🔴", "Schlecht"
     
     def spo2_rating(v):
         if not v: return "–", "keine Daten"
@@ -86,12 +85,18 @@ async def send_daily_report():
         if v >= 90: return "🟠", "Leicht reduziert"
         return "🔴", "Niedrig – Arzt konsultieren"
 
+    def apnoe_rating(v):
+        if v is None: return "–", "keine Daten"
+        if v == 0: return "🟢", "Keine Ereignisse"
+        if v <= 0.5: return "🟡", "Vereinzelt – beobachten"
+        if v <= 1.5: return "🟠", "Erhöht – Schlafqualität beeinträchtigt"
+        return "🔴", "Häufig – mit Arzt besprechen"
+
     hrv_icon, hrv_text = hrv_rating(hrv)
     bb_icon, bb_text = bb_rating(bb)
     sleep_icon, sleep_text = sleep_rating(sleep_score)
     spo2_icon, spo2_text = spo2_rating(spo2_sleep)
-
-    spo2_below_str = f"{spo2_below_90}h" if spo2_below_90 else "0h"
+    apnoe_icon, apnoe_text = apnoe_rating(spo2_below_90)
 
     msg = f"""🌅 *Morgenreport – {today.strftime("%d. %B %Y")}*
 
@@ -100,10 +105,10 @@ async def send_daily_report():
 {hrv_icon} HRV: {f"{hrv:.0f}ms" if hrv else "–"} – _{hrv_text}_
 {bb_icon} Body Battery: {bb or "–"} – _{bb_text}_
 
-*🫁 SpO2*
-{spo2_icon} Schlaf Ø: {f"{spo2_sleep:.0f}%" if spo2_sleep else "–"} – _{spo2_text}_
-📊 Tag Ø: {f"{spo2_avg:.0f}%" if spo2_avg else "–"} | Minimum: {f"{spo2_lowest}%" if spo2_lowest else "–"}
-⚠️ Unter 90%: {spo2_below_str}
+*🫁 SpO2 Schlaf*
+{spo2_icon} Ø Schlaf: {f"{spo2_sleep:.0f}%" if spo2_sleep else "–"} – _{spo2_text}_
+📉 Minimum: {f"{spo2_lowest}%" if spo2_lowest else "–"}
+{apnoe_icon} Unter 90%: {f"{spo2_below_90}h" if spo2_below_90 is not None else "0h"} – _{apnoe_text}_
 
 *🏊🚴🏃 Woche bisher*
 🏊 Swim – {fmt_distance(swim)} | {fmt_duration(swim)}
